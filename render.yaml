@@ -1,0 +1,17 @@
+# Alternative: Create Render Configuration File
+
+This file tells Render exactly how to deploy your backend.
+
+services:
+  - type: web
+    name: hoogle-meet-backend
+    runtime: node
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: CLIENT_URL
+        value: https://hoogle-meet.vercel.app
+    plan: free
+    region: oregon
+    healthCheckPath: /health
