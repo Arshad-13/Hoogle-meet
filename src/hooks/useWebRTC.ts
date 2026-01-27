@@ -232,9 +232,9 @@ export const useWebRTC = (socket: Socket | null, roomId: string, userId: string)
     const startScreenShare = useCallback(async () => {
         try {
             const screenStream = await navigator.mediaDevices.getDisplayMedia({
-                video: { cursor: 'always' },
+                video: true,
                 audio: false,
-            });
+            } as DisplayMediaStreamOptions);
 
             const screenTrack = screenStream.getVideoTracks()[0];
             screenStreamRef.current = screenStream;
