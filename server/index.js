@@ -173,12 +173,14 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3001;
-server.listen(PORT, () => {
+const HOST = '0.0.0.0'; // Listen on all interfaces for Railway
+
+server.listen(PORT, HOST, () => {
     console.log(`
 ╔════════════════════════════════════════════════════╗
 ║   Hoogle Meet Signaling Server                     ║
 ║   Running on port ${PORT}                            ║
-║   WebSocket endpoint: ws://localhost:${PORT}         ║
+║   Health check: https://your-domain.railway.app/health ║
 ╚════════════════════════════════════════════════════╝
     `);
 });
