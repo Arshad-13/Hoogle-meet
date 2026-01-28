@@ -23,12 +23,12 @@ export const VideoTile = ({
 
     // Handle stream attachment
     useEffect(() => {
-        if (videoRef.current && stream) {
+        if (videoRef.current && stream && isVideoActive) {
             videoRef.current.srcObject = stream;
         } else if (videoRef.current) {
             videoRef.current.srcObject = null;
         }
-    }, [stream]);
+    }, [stream, isVideoActive]);
 
     // Handle track state changes
     useEffect(() => {

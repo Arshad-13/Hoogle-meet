@@ -10,11 +10,16 @@ interface Peer {
     userId: string;
 }
 
-export const useWebRTC = (socket: Socket | null, roomId: string, userId: string) => {
+export const useWebRTC = (
+    socket: Socket | null,
+    roomId: string,
+    userId: string,
+    initialState: { mic: boolean; cam: boolean } = { mic: true, cam: true }
+) => {
     const [localStream, setLocalStream] = useState<MediaStream | null>(null);
     const [peers, setPeers] = useState<Map<string, Peer>>(new Map());
-    const [isMicOn, setIsMicOn] = useState(true);
-    const [isCameraOn, setIsCameraOn] = useState(true);
+    const [isMicOn, setIsMicOn] = useState(initialState.mic);
+    const [isCameraOn, setIsCameraOn] = useState(initialState.cam);
     const [isScreenSharing, setIsScreenSharing] = useState(false);
 
     const peersRef = useRef<Map<string, Peer>>(new Map());
@@ -34,6 +39,14 @@ export const useWebRTC = (socket: Socket | null, roomId: string, userId: string)
                 }
             });
 
+            // Apply initial state
+            if (!initialState.mic) {
+                stream.getAudioTracks().forEach(track => track.enabled = false);
+            }
+            if (!initialState.cam) {
+                stream.getVideoTracks().forEach(track => track.enabled = false);
+            }
+
             setLocalStream(stream);
             localStreamRef.current = stream;
             console.log('✅ Local stream initialized');
@@ -43,7 +56,7 @@ export const useWebRTC = (socket: Socket | null, roomId: string, userId: string)
             console.error('❌ Error accessing media devices:', error);
             throw error;
         }
-    }, []);
+    }, [initialState.mic, initialState.cam]);
 
     // Create peer connection
     const createPeerConnection = useCallback((targetSocketId: string, targetUserId: string): RTCPeerConnection => {

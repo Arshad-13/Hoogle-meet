@@ -16,6 +16,13 @@ export default function Lobby() {
 
     const videoRef = useRef<HTMLVideoElement>(null);
 
+    // Attach stream to video element when loading finishes
+    useEffect(() => {
+        if (!isLoading && videoRef.current && localStream) {
+            videoRef.current.srcObject = localStream;
+        }
+    }, [isLoading, localStream]);
+
     useEffect(() => {
         const initMedia = async () => {
             try {
@@ -29,11 +36,6 @@ export default function Lobby() {
                 });
 
                 setLocalStream(stream);
-
-                if (videoRef.current) {
-                    videoRef.current.srcObject = stream;
-                }
-
                 setIsLoading(false);
             } catch (error: any) {
                 console.error('Error accessing media devices:', error);
@@ -77,7 +79,7 @@ export default function Lobby() {
 
     const joinMeeting = () => {
         if (localStream) {
-            router.push(`/room/${roomId}`);
+            router.push(`/room/${roomId}?mic=${isMicOn}&cam=${isCameraOn}`);
         }
     };
 
