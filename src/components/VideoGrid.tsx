@@ -14,9 +14,10 @@ interface VideoGridProps {
     peers: Map<string, Peer>;
     currentUserId: string;
     isLocalVideoEnabled?: boolean;
+    isLocalAudioEnabled?: boolean;
 }
 
-export const VideoGrid = ({ localStream, peers, currentUserId, isLocalVideoEnabled }: VideoGridProps) => {
+export const VideoGrid = ({ localStream, peers, currentUserId, isLocalVideoEnabled, isLocalAudioEnabled }: VideoGridProps) => {
     // Convert peers map to array and SORT it to ensure stability (prevent jumping)
     const sortedPeers = useMemo(() => {
         return Array.from(peers.entries()).sort((a, b) => a[0].localeCompare(b[0]));
@@ -52,6 +53,7 @@ export const VideoGrid = ({ localStream, peers, currentUserId, isLocalVideoEnabl
                     isMuted={true} // Local user always muted locally to prevent echo
                     isLocal={true}
                     isForceVideoEnabled={isLocalVideoEnabled}
+                    isForceAudioEnabled={isLocalAudioEnabled}
                 />
             </div>
 

@@ -8,6 +8,7 @@ interface VideoTileProps {
     isMuted?: boolean;
     isLocal?: boolean;
     isForceVideoEnabled?: boolean; // Prop to force video state (useful for local user)
+    isForceAudioEnabled?: boolean; // Prop to force audio state (useful for local user)
 }
 
 export const VideoTile = ({
@@ -15,7 +16,8 @@ export const VideoTile = ({
     userId,
     isMuted = false,
     isLocal = false,
-    isForceVideoEnabled
+    isForceVideoEnabled,
+    isForceAudioEnabled
 }: VideoTileProps) => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const [isVideoActive, setIsVideoActive] = useState(true);
@@ -30,19 +32,21 @@ export const VideoTile = ({
         }
     }, [stream, isVideoActive]);
 
-    // Handle track state changes
+    // Handle track state changes (for local override)
     useEffect(() => {
-        // If explicit prop is provided (e.g. for local user), use it
         if (isForceVideoEnabled !== undefined) {
             setIsVideoActive(isForceVideoEnabled);
         }
-    }, [isForceVideoEnabled]);
+        if (isForceAudioEnabled !== undefined) {
+            setIsAudioActive(isForceAudioEnabled);
+        }
+    }, [isForceVideoEnabled, isForceAudioEnabled]);
 
     // Listen for stream track changes (remote peers)
     useEffect(() => {
         if (!stream) {
             if (isForceVideoEnabled === undefined) setIsVideoActive(false);
-            setIsAudioActive(false);
+            if (isForceAudioEnabled === undefined) setIsAudioActive(false);
             return;
         }
 
@@ -50,14 +54,17 @@ export const VideoTile = ({
             const videoTrack = stream.getVideoTracks()[0];
             const audioTrack = stream.getAudioTracks()[0];
 
-            // Only update if not forced
             if (isForceVideoEnabled === undefined) {
                 setIsVideoActive(videoTrack?.enabled ?? false);
             }
-            setIsAudioActive(audioTrack?.enabled ?? false);
+            if (isForceAudioEnabled === undefined) {
+                setIsAudioActive(audioTrack?.enabled ?? false);
+            }
 
             return { videoTrack, audioTrack };
         };
+
+        // ... (rest of the effect logic)
 
         const { videoTrack: initialVideo, audioTrack: initialAudio } = checkTracks();
 
@@ -93,7 +100,7 @@ export const VideoTile = ({
             detachTrackListeners(initialVideo);
             detachTrackListeners(initialAudio);
         };
-    }, [stream, isForceVideoEnabled]);
+    }, [stream, isForceVideoEnabled, isForceAudioEnabled]);
 
     return (
         <div className="video-tile">
@@ -125,12 +132,11 @@ export const VideoTile = ({
             <style jsx>{`
                 .video-tile {
                     position: relative;
-                    background: var(--bg-secondary);
+                    background: #1a1a1a; /* Dark background for letterboxing */
                     border-radius: 12px;
                     overflow: hidden;
                     width: 100%;
                     height: 100%;
-                    /* Use object-fit cover logic via CSS on video */
                     border: 1px solid var(--border-color);
                     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
                 }
@@ -138,14 +144,14 @@ export const VideoTile = ({
                 .video-local {
                     width: 100%;
                     height: 100%;
-                    object-fit: cover;
+                    object-fit: contain; /* Correct aspect ratio */
                     transform: scaleX(-1);
                 }
 
                 .video-remote {
                     width: 100%;
                     height: 100%;
-                    object-fit: cover;
+                    object-fit: contain; /* Correct aspect ratio */
                 }
 
                 .video-placeholder {

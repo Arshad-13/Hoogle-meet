@@ -108,6 +108,7 @@ export default function Room() {
                 peers={peers}
                 currentUserId={userId}
                 isLocalVideoEnabled={isCameraOn}
+                isLocalAudioEnabled={isMicOn}
             />
 
             <ControlBar
