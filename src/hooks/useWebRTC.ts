@@ -339,21 +339,15 @@ export const useWebRTC = (socket: Socket | null, roomId: string, userId: string)
         };
     }, [socket, createOffer, handleOffer, handleAnswer, handleIceCandidate, removePeer]);
 
-    // Cleanup on unmount
+    // Cleanup peers/socket listeners
     useEffect(() => {
         return () => {
-            // Stop all tracks
-            if (localStreamRef.current) {
-                localStreamRef.current.getTracks().forEach(track => track.stop());
-            }
-            if (screenStreamRef.current) {
-                screenStreamRef.current.getTracks().forEach(track => track.stop());
-            }
-
-            // Close all peer connections
+            // Close all peer connections on socket change/unmount
             peersRef.current.forEach(peer => {
                 peer.connection.close();
             });
+            peersRef.current.clear();
+            setPeers(new Map());
 
             // Leave room
             if (socket) {
@@ -361,6 +355,19 @@ export const useWebRTC = (socket: Socket | null, roomId: string, userId: string)
             }
         };
     }, [socket]);
+
+    // Cleanup media tracks ONLY on component unmount
+    useEffect(() => {
+        return () => {
+            console.log('🛑 Cleaning up media tracks');
+            if (localStreamRef.current) {
+                localStreamRef.current.getTracks().forEach(track => track.stop());
+            }
+            if (screenStreamRef.current) {
+                screenStreamRef.current.getTracks().forEach(track => track.stop());
+            }
+        };
+    }, []);
 
     return {
         localStream,
