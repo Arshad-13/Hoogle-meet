@@ -101,6 +101,7 @@ export default function Room() {
                 localStream={localStream}
                 peers={peers}
                 currentUserId={userId}
+                isLocalVideoEnabled={isCameraOn}
             />
 
             <ControlBar

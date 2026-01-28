@@ -7,81 +7,97 @@ interface VideoTileProps {
     userId: string;
     isMuted?: boolean;
     isLocal?: boolean;
+    isForceVideoEnabled?: boolean; // Prop to force video state (useful for local user)
 }
 
-export const VideoTile = ({ stream, userId, isMuted = false, isLocal = false }: VideoTileProps) => {
+export const VideoTile = ({
+    stream,
+    userId,
+    isMuted = false,
+    isLocal = false,
+    isForceVideoEnabled
+}: VideoTileProps) => {
     const videoRef = useRef<HTMLVideoElement>(null);
-    const [isVideoEnabled, setIsVideoEnabled] = useState(true);
-    const [isAudioEnabled, setIsAudioEnabled] = useState(true);
+    const [isVideoActive, setIsVideoActive] = useState(true);
+    const [isAudioActive, setIsAudioActive] = useState(true);
 
     // Handle stream attachment
     useEffect(() => {
         if (videoRef.current && stream) {
             videoRef.current.srcObject = stream;
+        } else if (videoRef.current) {
+            videoRef.current.srcObject = null;
         }
     }, [stream]);
 
-    // Listen for track changes (mute/unmute/enabled)
+    // Handle track state changes
+    useEffect(() => {
+        // If explicit prop is provided (e.g. for local user), use it
+        if (isForceVideoEnabled !== undefined) {
+            setIsVideoActive(isForceVideoEnabled);
+        }
+    }, [isForceVideoEnabled]);
+
+    // Listen for stream track changes (remote peers)
     useEffect(() => {
         if (!stream) {
-            setIsVideoEnabled(false);
-            setIsAudioEnabled(false);
+            if (isForceVideoEnabled === undefined) setIsVideoActive(false);
+            setIsAudioActive(false);
             return;
         }
 
-        const videoTrack = stream.getVideoTracks()[0];
-        const audioTrack = stream.getAudioTracks()[0];
+        const checkTracks = () => {
+            const videoTrack = stream.getVideoTracks()[0];
+            const audioTrack = stream.getAudioTracks()[0];
 
-        const updateState = () => {
-            setIsVideoEnabled(videoTrack?.enabled ?? false);
-            setIsAudioEnabled(audioTrack?.enabled ?? false);
+            // Only update if not forced
+            if (isForceVideoEnabled === undefined) {
+                setIsVideoActive(videoTrack?.enabled ?? false);
+            }
+            setIsAudioActive(audioTrack?.enabled ?? false);
+
+            return { videoTrack, audioTrack };
         };
 
-        // Initial state
-        updateState();
-
-        // Listeners for remote track mute/unmute events
-        // Note: For remote streams, 'mute' means source is unavailable (or network issue)
-        // For local streams, we toggle 'enabled'
+        const { videoTrack: initialVideo, audioTrack: initialAudio } = checkTracks();
 
         const handleTrackChange = () => {
-            // Force re-check
-            updateState();
+            checkTracks();
         };
 
-        if (videoTrack) {
-            videoTrack.addEventListener('mute', handleTrackChange);
-            videoTrack.addEventListener('unmute', handleTrackChange);
-            videoTrack.addEventListener('ended', handleTrackChange);
-        }
+        // Listen to stream events (tracks added/removed)
+        stream.addEventListener('addtrack', handleTrackChange);
+        stream.addEventListener('removetrack', handleTrackChange);
 
-        if (audioTrack) {
-            audioTrack.addEventListener('mute', handleTrackChange);
-            audioTrack.addEventListener('unmute', handleTrackChange);
-            audioTrack.addEventListener('ended', handleTrackChange);
-        }
+        // Listen to track events (mute/unmute/ended)
+        const attachTrackListeners = (track: MediaStreamTrack | undefined) => {
+            if (!track) return;
+            track.addEventListener('mute', handleTrackChange);
+            track.addEventListener('unmute', handleTrackChange);
+            track.addEventListener('ended', handleTrackChange);
+        };
+
+        const detachTrackListeners = (track: MediaStreamTrack | undefined) => {
+            if (!track) return;
+            track.removeEventListener('mute', handleTrackChange);
+            track.removeEventListener('unmute', handleTrackChange);
+            track.removeEventListener('ended', handleTrackChange);
+        };
+
+        attachTrackListeners(initialVideo);
+        attachTrackListeners(initialAudio);
 
         return () => {
-            if (videoTrack) {
-                videoTrack.removeEventListener('mute', handleTrackChange);
-                videoTrack.removeEventListener('unmute', handleTrackChange);
-                videoTrack.removeEventListener('ended', handleTrackChange);
-            }
-            if (audioTrack) {
-                audioTrack.removeEventListener('mute', handleTrackChange);
-                audioTrack.removeEventListener('unmute', handleTrackChange);
-                audioTrack.removeEventListener('ended', handleTrackChange);
-            }
+            stream.removeEventListener('addtrack', handleTrackChange);
+            stream.removeEventListener('removetrack', handleTrackChange);
+            detachTrackListeners(initialVideo);
+            detachTrackListeners(initialAudio);
         };
-    }, [stream]);
-
-    // For local user, we rely on props or direct track checks? 
-    // Actually, usually app passes `enabled` prop or we just check the track.
-    // Ideally use isVideoEnabled state.
+    }, [stream, isForceVideoEnabled]);
 
     return (
         <div className="video-tile">
-            {isVideoEnabled && stream ? (
+            {isVideoActive && stream ? (
                 <video
                     ref={videoRef}
                     autoPlay
@@ -99,7 +115,7 @@ export const VideoTile = ({ stream, userId, isMuted = false, isLocal = false }: 
 
             <div className="video-label">
                 <span className="user-name">{isLocal ? 'You' : userId}</span>
-                {!isAudioEnabled && (
+                {!isAudioActive && (
                     <svg className="muted-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l5.98 5.99zM4.27 3L3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .22 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5.3-2.1-5.3-5.1H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c.91-.13 1.77-.45 2.54-.9L19.73 21 21 19.73 4.27 3z" />
                     </svg>
@@ -116,7 +132,7 @@ export const VideoTile = ({ stream, userId, isMuted = false, isLocal = false }: 
                     height: 100%;
                     /* Use object-fit cover logic via CSS on video */
                     border: 1px solid var(--border-color);
-                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
                 }
 
                 .video-local {
