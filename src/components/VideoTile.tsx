@@ -104,15 +104,19 @@ export const VideoTile = ({
 
     return (
         <div className="video-tile">
-            {isVideoActive && stream ? (
+            {/* Always render video to keep audio playing */}
+            {stream && (
                 <video
                     ref={videoRef}
                     autoPlay
                     playsInline
                     muted={isMuted}
-                    className={isLocal ? 'video-local' : 'video-remote'}
+                    className={`video-element ${isVideoActive ? 'visible' : 'hidden'} ${isLocal ? 'local' : 'remote'}`}
                 />
-            ) : (
+            )}
+
+            {/* Show placeholder if video is not active */}
+            {(!isVideoActive || !stream) && (
                 <div className="video-placeholder">
                     <div className="avatar">
                         {userId.charAt(0).toUpperCase()}
@@ -132,7 +136,7 @@ export const VideoTile = ({
             <style jsx>{`
                 .video-tile {
                     position: relative;
-                    background: #1a1a1a; /* Dark background for letterboxing */
+                    background: #1a1a1a;
                     border-radius: 12px;
                     overflow: hidden;
                     width: 100%;
@@ -141,22 +145,32 @@ export const VideoTile = ({
                     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
                 }
 
-                .video-local {
+                .video-element {
                     width: 100%;
                     height: 100%;
-                    object-fit: contain; /* Correct aspect ratio */
+                    object-fit: contain; /* Ensure no cropping */
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                }
+
+                .video-element.local {
                     transform: scaleX(-1);
                 }
 
-                .video-remote {
-                    width: 100%;
-                    height: 100%;
-                    object-fit: contain; /* Correct aspect ratio */
+                .video-element.hidden {
+                    opacity: 0; /* Hide visually but keep processing audio */
+                    z-index: 0;
                 }
 
+                /* Ensure placeholder sits on top when video is hidden */
                 .video-placeholder {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
                     width: 100%;
                     height: 100%;
+                    z-index: 10;
                     display: flex;
                     align-items: center;
                     justify-content: center;
@@ -189,6 +203,7 @@ export const VideoTile = ({
                     align-items: center;
                     gap: 8px;
                     transition: all 0.2s ease;
+                    z-index: 20; /* Keep label above everything */
                 }
 
                 .user-name {
