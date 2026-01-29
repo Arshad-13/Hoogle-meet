@@ -195,8 +195,7 @@ export const VideoTile = ({
                     position: absolute;
                     bottom: 12px;
                     left: 12px;
-                    background: rgba(0, 0, 0, 0.6);
-                    backdrop-filter: blur(10px);
+                    background: rgba(0, 0, 0, 0.7);
                     padding: 6px 12px;
                     border-radius: 8px;
                     display: flex;
