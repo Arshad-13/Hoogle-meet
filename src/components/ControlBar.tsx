@@ -133,25 +133,26 @@ export const ControlBar = ({
 
                 .control-center {
                     display: flex;
-                    gap: 16px;
+                    gap: 12px;
                     align-items: center;
                 }
 
                 .participant-count {
                     display: flex;
                     align-items: center;
-                    gap: 8px;
-                    padding: 8px 16px;
+                    gap: 6px;
+                    padding: 6px 12px;
                     background: var(--bg-secondary);
-                    border-radius: 24px;
+                    border-radius: 20px;
                     border: 1px solid var(--border-color);
                     color: var(--text-primary);
                     font-weight: 500;
+                    font-size: 13px;
                 }
 
                 .control-btn {
-                    width: 56px;
-                    height: 56px;
+                    width: 48px;
+                    height: 48px;
                     border-radius: 50%;
                     background: var(--bg-secondary);
                     border: 1px solid var(--border-color);
@@ -193,21 +194,26 @@ export const ControlBar = ({
 
                 @media (max-width: 768px) {
                     .control-bar {
-                        padding: 0 16px;
+                        padding: 0 12px;
                     }
 
                     .control-center {
-                        gap: 12px;
+                        gap: 8px;
                     }
 
                     .control-btn {
-                        width: 48px;
-                        height: 48px;
+                        width: 42px;
+                        height: 42px;
                     }
 
                     .control-left,
                     .control-right {
                         flex: 0;
+                    }
+                    
+                    .participant-count {
+                        font-size: 12px;
+                        padding: 4px 8px;
                     }
                 }
             `}</style>

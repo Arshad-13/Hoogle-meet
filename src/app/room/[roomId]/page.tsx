@@ -143,14 +143,14 @@ export default function Room() {
 
                 .room-header {
                     width: 100%;
-                    height: 64px;
+                    height: 48px;
                     flex-shrink: 0;
-                    background: rgba(17, 24, 39, 0.95);
-                    border-bottom: 1px solid var(--border-color);
+                    background: rgba(17, 24, 39, 0.98);
+                    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
                     display: flex;
                     align-items: center;
                     justify-content: space-between;
-                    padding: 0 24px;
+                    padding: 0 20px;
                     z-index: 50;
                 }
 
@@ -164,15 +164,15 @@ export default function Room() {
 
                 .controls-wrapper {
                     width: 100%;
-                    height: 88px;
+                    height: 64px;
                     flex-shrink: 0;
                     z-index: 50;
-                    background: rgba(17, 24, 39, 0.95);
-                    border-top: 1px solid var(--border-color);
+                    background: rgba(17, 24, 39, 0.98);
+                    border-top: 1px solid rgba(255, 255, 255, 0.05);
                 }
 
                 .room-title {
-                    font-size: 20px;
+                    font-size: 16px;
                     font-weight: 600;
                     background: var(--accent-gradient);
                     -webkit-background-clip: text;
@@ -183,28 +183,33 @@ export default function Room() {
                 .room-code {
                     display: flex;
                     align-items: center;
-                    gap: 8px;
+                    gap: 6px;
                     color: var(--text-secondary);
-                    font-size: 14px;
+                    font-size: 12px;
                 }
 
                 .room-code code {
-                    background: var(--bg-secondary);
-                    padding: 4px 12px;
-                    border-radius: 6px;
+                    background: rgba(26, 31, 58, 0.8);
+                    padding: 3px 8px;
+                    border-radius: 4px;
                     font-family: 'Courier New', monospace;
+                    font-size: 11px;
                     color: var(--text-primary);
-                    border: 1px solid var(--border-color);
+                    border: 1px solid rgba(255, 255, 255, 0.1);
                 }
 
                 @media (max-width: 768px) {
                     .room-header {
-                        height: 60px;
-                        padding: 0 16px;
+                        height: 44px;
+                        padding: 0 12px;
                     }
                     
                     .controls-wrapper {
-                        height: 80px;
+                        height: 60px;
+                    }
+                    
+                    .room-title {
+                        font-size: 14px;
                     }
                 }
             `}</style>
