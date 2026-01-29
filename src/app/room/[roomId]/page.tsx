@@ -94,45 +94,54 @@ export default function Room() {
     }
 
     return (
-        <div className="room-container">
-            <div className="room-header">
-                <h2 className="room-title">Hoogle Meet</h2>
+        <div className="room-layout">
+            {/* Header */}
+            <header className="room-header">
+                <div className="logo-section">
+                    <h2 className="room-title">Hoogle Meet</h2>
+                </div>
                 <div className="room-code">
                     <span>Room:</span>
                     <code>{roomId}</code>
                 </div>
+            </header>
+
+            {/* Main Video Area */}
+            <main className="video-area">
+                <VideoGrid
+                    localStream={localStream}
+                    peers={peers}
+                    currentUserId={userId}
+                    isLocalVideoEnabled={isCameraOn}
+                    isLocalAudioEnabled={isMicOn}
+                />
+            </main>
+
+            {/* Footer Controls */}
+            <div className="controls-wrapper">
+                <ControlBar
+                    isMicOn={isMicOn}
+                    isCameraOn={isCameraOn}
+                    isScreenSharing={isScreenSharing}
+                    onToggleMic={toggleMic}
+                    onToggleCamera={toggleCamera}
+                    onToggleScreenShare={handleToggleScreenShare}
+                    participantCount={peers.size + 1}
+                />
             </div>
 
-            <VideoGrid
-                localStream={localStream}
-                peers={peers}
-                currentUserId={userId}
-                isLocalVideoEnabled={isCameraOn}
-                isLocalAudioEnabled={isMicOn}
-            />
-
-            <ControlBar
-                isMicOn={isMicOn}
-                isCameraOn={isCameraOn}
-                isScreenSharing={isScreenSharing}
-                onToggleMic={toggleMic}
-                onToggleCamera={toggleCamera}
-                onToggleScreenShare={handleToggleScreenShare}
-                participantCount={peers.size + 1}
-            />
-
             <style jsx>{`
-                .room-container {
+                .room-layout {
                     height: 100vh;
+                    display: flex;
+                    flex-direction: column;
                     background: var(--bg-primary);
+                    overflow: hidden; /* Prevent scrolling */
                 }
 
                 .room-header {
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    right: 0;
-                    height: 60px;
+                    height: 64px;
+                    flex-shrink: 0;
                     background: var(--bg-glass);
                     backdrop-filter: blur(20px);
                     border-bottom: 1px solid var(--border-color);
@@ -140,7 +149,23 @@ export default function Room() {
                     align-items: center;
                     justify-content: space-between;
                     padding: 0 24px;
-                    z-index: 90;
+                    z-index: 50;
+                }
+
+                .video-area {
+                    flex: 1;
+                    position: relative;
+                    overflow: hidden;
+                    display: flex;
+                    flex-direction: column;
+                }
+
+                .controls-wrapper {
+                    height: 88px;
+                    flex-shrink: 0;
+                    z-index: 50;
+                    background: var(--bg-glass);
+                    border-top: 1px solid var(--border-color);
                 }
 
                 .room-title {
@@ -171,14 +196,15 @@ export default function Room() {
 
                 @media (max-width: 768px) {
                     .room-header {
-                        flex-direction: column;
-                        height: auto;
-                        padding: 12px;
-                        gap: 8px;
-                        align-items: flex-start;
+                        height: 60px;
+                        padding: 0 16px;
+                    }
+                    
+                    .controls-wrapper {
+                        height: 80px;
                     }
                 }
             `}</style>
-        </div>
+        </div >
     );
 }

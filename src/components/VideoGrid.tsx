@@ -74,9 +74,8 @@ export const VideoGrid = ({ localStream, peers, currentUserId, isLocalVideoEnabl
                     display: grid;
                     gap: 16px;
                     width: 100%;
-                    height: calc(100vh - 80px); /* Minus header */
-                    padding: 16px;
-                    padding-bottom: 96px; /* Space for control bar */
+                    height: 100%; /* Fill the container */
+                    padding: 24px;
                     
                     /* Dynamic Grid */
                     grid-template-columns: repeat(var(--grid-cols), 1fr);
@@ -95,13 +94,13 @@ export const VideoGrid = ({ localStream, peers, currentUserId, isLocalVideoEnabl
                     display: flex;
                     justify-content: center;
                     align-items: center;
+                    position: relative;
                 }
 
                 @media (max-width: 768px) {
                     .video-grid {
                         gap: 8px;
-                        padding: 8px;
-                        padding-bottom: 80px;
+                        padding: 12px;
                         
                         /* Mobile specific layouts */
                         grid-template-columns: ${totalCount <= 2 ? '1fr' : 'repeat(2, 1fr)'};
