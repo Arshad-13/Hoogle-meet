@@ -117,7 +117,7 @@ export const ControlBar = ({
             <style jsx>{`
                 .control-bar {
                     width: 100%;
-                    height: 100%;
+                    height: 86px;
                     display: flex;
                     align-items: center;
                     justify-content: space-between;
