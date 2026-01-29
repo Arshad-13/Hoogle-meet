@@ -132,18 +132,20 @@ export default function Room() {
 
             <style jsx>{`
                 .room-layout {
+                    width: 100%;
                     height: 100vh;
                     display: flex;
                     flex-direction: column;
                     background: var(--bg-primary);
-                    overflow: hidden; /* Prevent scrolling */
+                    overflow: hidden;
+                    position: relative;
                 }
 
                 .room-header {
+                    width: 100%;
                     height: 64px;
                     flex-shrink: 0;
-                    background: var(--bg-glass);
-                    backdrop-filter: blur(20px);
+                    background: rgba(17, 24, 39, 0.95);
                     border-bottom: 1px solid var(--border-color);
                     display: flex;
                     align-items: center;
@@ -154,17 +156,18 @@ export default function Room() {
 
                 .video-area {
                     flex: 1;
+                    min-height: 0;
+                    width: 100%;
                     position: relative;
                     overflow: hidden;
-                    display: flex;
-                    flex-direction: column;
                 }
 
                 .controls-wrapper {
+                    width: 100%;
                     height: 88px;
                     flex-shrink: 0;
                     z-index: 50;
-                    background: var(--bg-glass);
+                    background: rgba(17, 24, 39, 0.95);
                     border-top: 1px solid var(--border-color);
                 }
 
