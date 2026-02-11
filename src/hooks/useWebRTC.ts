@@ -26,6 +26,7 @@ export const useWebRTC = (
     const localStreamRef = useRef<MediaStream | null>(null);
     const screenStreamRef = useRef<MediaStream | null>(null);
     const originalVideoTrackRef = useRef<MediaStreamTrack | null>(null);
+    const pendingCandidates = useRef<Map<string, RTCIceCandidateInit[]>>(new Map());
 
     // Initialize local media stream
     const initLocalStream = useCallback(async () => {
@@ -168,6 +169,17 @@ export const useWebRTC = (
                 target: senderSocketId,
                 sdp: answer,
             });
+
+            // Process any pending ICE candidates
+            const candidates = pendingCandidates.current.get(senderSocketId);
+            if (candidates) {
+                console.log(`Processing ${candidates.length} pending candidates for ${senderId}`);
+                candidates.forEach(candidate => {
+                    peerConnection.addIceCandidate(new RTCIceCandidate(candidate))
+                        .catch(e => console.error('Error adding pending candidate:', e));
+                });
+                pendingCandidates.current.delete(senderSocketId);
+            }
         } catch (error) {
             console.error('Error handling offer:', error);
         }
@@ -183,6 +195,17 @@ export const useWebRTC = (
             try {
                 await peer.connection.setRemoteDescription(new RTCSessionDescription(sdp));
                 console.log(`Answer set for ${peer.userId}`);
+
+                // Process any pending ICE candidates
+                const candidates = pendingCandidates.current.get(senderSocketId);
+                if (candidates) {
+                    console.log(`Processing ${candidates.length} pending candidates for ${peer.userId}`);
+                    candidates.forEach(candidate => {
+                        peer.connection.addIceCandidate(new RTCIceCandidate(candidate))
+                            .catch(e => console.error('Error adding pending candidate:', e));
+                    });
+                    pendingCandidates.current.delete(senderSocketId);
+                }
             } catch (error) {
                 console.error('Error setting remote description:', error);
             }
@@ -196,10 +219,17 @@ export const useWebRTC = (
     ) => {
         const peer = peersRef.current.get(senderSocketId);
         if (peer) {
-            try {
-                await peer.connection.addIceCandidate(new RTCIceCandidate(candidate));
-            } catch (error) {
-                console.error('Error adding ICE candidate:', error);
+            if (peer.connection.remoteDescription) {
+                try {
+                    await peer.connection.addIceCandidate(new RTCIceCandidate(candidate));
+                } catch (error) {
+                    console.error('Error adding ICE candidate:', error);
+                }
+            } else {
+                // Queue candidate if remote description is not set yet
+                console.log(`Queueing ICE candidate for ${peer.userId}`);
+                const current = pendingCandidates.current.get(senderSocketId) || [];
+                pendingCandidates.current.set(senderSocketId, [...current, candidate]);
             }
         }
     }, []);

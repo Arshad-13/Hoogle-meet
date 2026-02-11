@@ -16,6 +16,7 @@ const io = socketIO(server, {
         methods: ["GET", "POST"]
     }
 });
+// Events emitted: 'existing-users', 'user-joined', 'user-disconnected', 'offer', 'answer', 'ice-candidate', 'room-full', 'server-busy'
 
 // In-memory storage for rooms and participants
 const rooms = new Map(); // Map<roomId, Set<socketId>>
@@ -49,6 +50,21 @@ io.on('connection', (socket) => {
                     rooms.delete(previousRoom);
                 }
             }
+        }
+
+        // Check global room limit (Max 1 active room)
+        if (rooms.size > 0 && !rooms.has(roomId)) {
+            socket.emit('server-busy');
+            console.log(`[${new Date().toISOString()}] Server busy: Rejecting new room ${roomId} from ${socket.id}`);
+            return;
+        }
+
+        // Check room capacity
+        const existingRoom = rooms.get(roomId);
+        if (existingRoom && existingRoom.size >= 4) {
+            socket.emit('room-full');
+            console.log(`[${new Date().toISOString()}] Room ${roomId} is full, rejecting connection from ${socket.id}`);
+            return;
         }
 
         // Join the new room

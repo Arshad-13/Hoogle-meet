@@ -19,7 +19,7 @@ export default function Room() {
     const [userId] = useState(() => `User-${Math.random().toString(36).substring(2, 8)}`);
     const [isInitialized, setIsInitialized] = useState(false);
 
-    const { socket, isConnected } = useSocket(roomId);
+    const { socket, isConnected, error } = useSocket(roomId);
     const {
         localStream,
         peers,
@@ -58,6 +58,76 @@ export default function Room() {
             startScreenShare();
         }
     };
+
+    if (error) {
+        return (
+            <div className="error-container">
+                <div className="error-content">
+                    <div className="error-icon">⚠️</div>
+                    <h3>Unable to join meeting</h3>
+                    <p>{error}</p>
+                    <button
+                        className="btn btn-primary"
+                        onClick={() => window.location.href = '/'}
+                    >
+                        Return to Home
+                    </button>
+                </div>
+
+                <style jsx>{`
+                    .error-container {
+                        height: 100vh;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        background: var(--bg-primary);
+                        color: var(--text-primary);
+                    }
+
+                    .error-content {
+                        text-align: center;
+                        padding: 32px;
+                        background: var(--bg-secondary);
+                        border-radius: 16px;
+                        border: 1px solid var(--border-color);
+                        max-width: 400px;
+                    }
+
+                    .error-icon {
+                        font-size: 48px;
+                        margin-bottom: 16px;
+                    }
+
+                    h3 {
+                        margin-bottom: 8px;
+                        font-size: 20px;
+                    }
+
+                    p {
+                        color: var(--text-secondary);
+                        margin-bottom: 24px;
+                    }
+
+                    .btn {
+                        padding: 12px 24px;
+                        border-radius: 8px;
+                        font-weight: 500;
+                        transition: all 0.2s;
+                    }
+
+                    .btn-primary {
+                        background: var(--accent-blue);
+                        color: white;
+                        border: none;
+                    }
+
+                    .btn-primary:hover {
+                        background: var(--accent-blue-hover);
+                    }
+                `}</style>
+            </div>
+        );
+    }
 
     if (!isConnected) {
         return (
