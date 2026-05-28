@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import styles from './ControlBar.module.css';
 
 interface ControlBarProps {
     isMicOn: boolean;
@@ -30,20 +31,21 @@ export const ControlBar = ({
     };
 
     return (
-        <div className="control-bar">
-            <div className="control-left">
-                <div className="participant-count">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill=" currentColor">
+        <div className={styles.controlBar}>
+            <div className={styles.controlLeft}>
+                <div className={styles.participantCount}>
+                    {/* Fixed: fill="currentColor" (no leading space) */}
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />
                     </svg>
                     <span>{participantCount}</span>
                 </div>
             </div>
 
-            <div className="control-center">
+            <div className={styles.controlCenter}>
                 {/* Microphone */}
                 <button
-                    className={`control-btn ${!isMicOn ? 'inactive' : ''}`}
+                    className={`${styles.controlBtn} ${!isMicOn ? styles.inactive : ''}`}
                     onClick={onToggleMic}
                     title={isMicOn ? 'Mute' : 'Unmute'}
                 >
@@ -67,7 +69,7 @@ export const ControlBar = ({
 
                 {/* Camera */}
                 <button
-                    className={`control-btn ${!isCameraOn ? 'inactive' : ''}`}
+                    className={`${styles.controlBtn} ${!isCameraOn ? styles.inactive : ''}`}
                     onClick={onToggleCamera}
                     title={isCameraOn ? 'Turn off camera' : 'Turn on camera'}
                 >
@@ -86,7 +88,7 @@ export const ControlBar = ({
 
                 {/* Screen Share */}
                 <button
-                    className={`control-btn ${isScreenSharing ? 'active' : ''}`}
+                    className={`${styles.controlBtn} ${isScreenSharing ? styles.active : ''}`}
                     onClick={onToggleScreenShare}
                     title={isScreenSharing ? 'Stop sharing' : 'Share screen'}
                 >
@@ -100,7 +102,7 @@ export const ControlBar = ({
 
                 {/* End Call */}
                 <button
-                    className="control-btn danger"
+                    className={`${styles.controlBtn} ${styles.danger}`}
                     onClick={handleEndCall}
                     title="Leave meeting"
                 >
@@ -110,113 +112,9 @@ export const ControlBar = ({
                 </button>
             </div>
 
-            <div className="control-right">
-                {/* Placeholder for future controls */}
+            <div className={styles.controlRight}>
+                {/* Placeholder for future controls (chat, raise hand, etc.) */}
             </div>
-
-            <style jsx>{`
-                .control-bar {
-                    width: 100%;
-                    height: 86px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    padding: 0 32px;
-                }
-
-                .control-left,
-                .control-right {
-                    flex: 1;
-                    display: flex;
-                    align-items: center;
-                }
-
-                .control-center {
-                    display: flex;
-                    gap: 12px;
-                    align-items: center;
-                }
-
-                .participant-count {
-                    display: flex;
-                    align-items: center;
-                    gap: 6px;
-                    padding: 6px 12px;
-                    background: var(--bg-secondary);
-                    border-radius: 20px;
-                    border: 1px solid var(--border-color);
-                    color: var(--text-primary);
-                    font-weight: 500;
-                    font-size: 13px;
-                }
-
-                .control-btn {
-                    width: 48px;
-                    height: 48px;
-                    border-radius: 50%;
-                    background: var(--bg-secondary);
-                    border: 1px solid var(--border-color);
-                    color: var(--text-primary);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    cursor: pointer;
-                    transition: all 0.3s ease;
-                }
-
-                .control-btn:hover {
-                    background: rgba(59, 130, 246, 0.2);
-                    border-color: var(--accent-blue);
-                    transform: scale(1.05);
-                }
-
-                .control-btn.active {
-                    background: var(--accent-blue);
-                    border-color: var(--accent-blue);
-                }
-
-                .control-btn.inactive {
-                    background: rgba(239, 68, 68, 0.2);
-                    border-color: #ef4444;
-                    color: #ef4444;
-                }
-
-                .control-btn.danger {
-                    background: #dc2626;
-                    border-color: #dc2626;
-                    color: white;
-                }
-
-                .control-btn.danger:hover {
-                    background: #b91c1c;
-                    border-color: #b91c1c;
-                }
-
-                @media (max-width: 768px) {
-                    .control-bar {
-                        padding: 0 12px;
-                    }
-
-                    .control-center {
-                        gap: 8px;
-                    }
-
-                    .control-btn {
-                        width: 42px;
-                        height: 42px;
-                    }
-
-                    .control-left,
-                    .control-right {
-                        flex: 0;
-                    }
-                    
-                    .participant-count {
-                        font-size: 12px;
-                        padding: 4px 8px;
-                    }
-                }
-            `}</style>
         </div>
     );
 };

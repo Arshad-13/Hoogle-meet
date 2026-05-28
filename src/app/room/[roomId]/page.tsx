@@ -6,6 +6,7 @@ import { useSocket } from '@/hooks/useSocket';
 import { useWebRTC } from '@/hooks/useWebRTC';
 import { VideoGrid } from '@/components/VideoGrid';
 import { ControlBar } from '@/components/ControlBar';
+import styles from './room.module.css';
 
 export default function Room() {
     const params = useParams();
@@ -34,22 +35,29 @@ export default function Room() {
         stopScreenShare,
     } = useWebRTC(socket, roomId, userId, { mic: initialMic, cam: initialCam });
 
-    // Initialize media and join room
+    // 1. Initialize media stream once on mount/setup
     useEffect(() => {
-        const setup = async () => {
-            if (isConnected && !isInitialized) {
+        const setupMedia = async () => {
+            if (!isInitialized) {
                 try {
                     await initLocalStream();
-                    joinRoom();
                     setIsInitialized(true);
                 } catch (error) {
-                    console.error('Failed to initialize:', error);
+                    console.error('Failed to initialize media:', error);
                 }
             }
         };
 
-        setup();
-    }, [isConnected, isInitialized, initLocalStream, joinRoom]);
+        setupMedia();
+    }, [isInitialized, initLocalStream]);
+
+    // 2. Join/rejoin room whenever socket connects AND media is ready
+    useEffect(() => {
+        if (isConnected && isInitialized) {
+            console.log('🔗 Socket connected and media initialized. Joining room...');
+            joinRoom();
+        }
+    }, [isConnected, isInitialized, joinRoom]);
 
     const handleToggleScreenShare = () => {
         if (isScreenSharing) {
@@ -61,9 +69,9 @@ export default function Room() {
 
     if (error) {
         return (
-            <div className="error-container">
-                <div className="error-content">
-                    <div className="error-icon">⚠️</div>
+            <div className={styles.errorContainer}>
+                <div className={styles.errorContent}>
+                    <div className={styles.errorIcon}>⚠️</div>
                     <h3>Unable to join meeting</h3>
                     <p>{error}</p>
                     <button
@@ -73,111 +81,34 @@ export default function Room() {
                         Return to Home
                     </button>
                 </div>
-
-                <style jsx>{`
-                    .error-container {
-                        height: 100vh;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        background: var(--bg-primary);
-                        color: var(--text-primary);
-                    }
-
-                    .error-content {
-                        text-align: center;
-                        padding: 32px;
-                        background: var(--bg-secondary);
-                        border-radius: 16px;
-                        border: 1px solid var(--border-color);
-                        max-width: 400px;
-                    }
-
-                    .error-icon {
-                        font-size: 48px;
-                        margin-bottom: 16px;
-                    }
-
-                    h3 {
-                        margin-bottom: 8px;
-                        font-size: 20px;
-                    }
-
-                    p {
-                        color: var(--text-secondary);
-                        margin-bottom: 24px;
-                    }
-
-                    .btn {
-                        padding: 12px 24px;
-                        border-radius: 8px;
-                        font-weight: 500;
-                        transition: all 0.2s;
-                    }
-
-                    .btn-primary {
-                        background: var(--accent-blue);
-                        color: white;
-                        border: none;
-                    }
-
-                    .btn-primary:hover {
-                        background: var(--accent-blue-hover);
-                    }
-                `}</style>
             </div>
         );
     }
 
     if (!isConnected) {
         return (
-            <div className="loading-container">
-                <div className="spinner"></div>
+            <div className={styles.loadingContainer}>
+                <div className={styles.spinner}></div>
                 <p>Connecting to meeting...</p>
-
-                <style jsx>{`
-                    .loading-container {
-                        height: 100vh;
-                        display: flex;
-                        flex-direction: column;
-                        align-items: center;
-                        justify-content: center;
-                        gap: 24px;
-                        color: var(--text-secondary);
-                    }
-
-                    .spinner {
-                        width: 64px;
-                        height: 64px;
-                        border: 4px solid var(--border-color);
-                        border-top-color: var(--accent-blue);
-                        border-radius: 50%;
-                        animation: spin 1s linear infinite;
-                    }
-
-                    @keyframes spin {
-                        to { transform: rotate(360deg); }
-                    }
-                `}</style>
             </div>
         );
     }
 
     return (
-        <div className="room-layout">
+        <div className={styles.roomLayout}>
             {/* Header */}
-            <header className="room-header">
+            <header className={styles.roomHeader}>
                 <div className="logo-section">
-                    <h2 className="room-title">Hoogle Meet</h2>
+                    <h2 className={styles.roomTitle}>Hoogle Meet</h2>
                 </div>
-                <div className="room-code">
+                <div className={styles.roomCode}>
                     <span>Room:</span>
                     <code>{roomId}</code>
                 </div>
             </header>
 
             {/* Main Video Area */}
-            <main className="video-area">
+            <main className={styles.videoArea}>
                 <VideoGrid
                     localStream={localStream}
                     peers={peers}
@@ -188,7 +119,7 @@ export default function Room() {
             </main>
 
             {/* Footer Controls */}
-            <div className="controls-wrapper">
+            <div className={styles.controlsWrapper}>
                 <ControlBar
                     isMicOn={isMicOn}
                     isCameraOn={isCameraOn}
@@ -199,90 +130,6 @@ export default function Room() {
                     participantCount={peers.size + 1}
                 />
             </div>
-
-            <style jsx>{`
-                .room-layout {
-                    width: 100%;
-                    height: 100vh;
-                    display: flex;
-                    flex-direction: column;
-                    background: var(--bg-primary);
-                    overflow: hidden;
-                    position: relative;
-                }
-
-                .room-header {
-                    width: 100%;
-                    height: 48px;
-                    flex-shrink: 0;
-                    background: rgba(17, 24, 39, 0.98);
-                    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    padding: 0 20px;
-                    z-index: 50;
-                }
-
-                .video-area {
-                    flex: 1;
-                    min-height: 0;
-                    width: 100%;
-                    position: relative;
-                    overflow: hidden;
-                }
-
-                .controls-wrapper {
-                    width: 100%;
-                    height: 64px;
-                    flex-shrink: 0;
-                    z-index: 50;
-                    background: rgba(17, 24, 39, 0.98);
-                    border-top: 1px solid rgba(255, 255, 255, 0.05);
-                }
-
-                .room-title {
-                    font-size: 16px;
-                    font-weight: 600;
-                    background: var(--accent-gradient);
-                    -webkit-background-clip: text;
-                    -webkit-text-fill-color: transparent;
-                    background-clip: text;
-                }
-
-                .room-code {
-                    display: flex;
-                    align-items: center;
-                    gap: 6px;
-                    color: var(--text-secondary);
-                    font-size: 12px;
-                }
-
-                .room-code code {
-                    background: rgba(26, 31, 58, 0.8);
-                    padding: 3px 8px;
-                    border-radius: 4px;
-                    font-family: 'Courier New', monospace;
-                    font-size: 11px;
-                    color: var(--text-primary);
-                    border: 1px solid rgba(255, 255, 255, 0.1);
-                }
-
-                @media (max-width: 768px) {
-                    .room-header {
-                        height: 44px;
-                        padding: 0 12px;
-                    }
-                    
-                    .controls-wrapper {
-                        height: 60px;
-                    }
-                    
-                    .room-title {
-                        font-size: 14px;
-                    }
-                }
-            `}</style>
-        </div >
+        </div>
     );
 }

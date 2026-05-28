@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { VideoTile } from './VideoTile';
+import styles from './VideoGrid.module.css';
 
 interface Peer {
     connection: RTCPeerConnection;
@@ -39,14 +40,15 @@ export const VideoGrid = ({ localStream, peers, currentUserId, isLocalVideoEnabl
     return (
         <div
             id="video-grid-container"
-            className="video-grid"
+            className={styles.videoGrid}
             style={{
                 '--grid-cols': layout.cols,
                 '--grid-rows': layout.rows,
+                '--mobile-cols': totalCount <= 2 ? 1 : 2,
             } as React.CSSProperties}
         >
             {/* Local video - Always first or based on sort? usually "You" is first or last. Let's keep it first for stability */}
-            <div className="tile-wrapper">
+            <div className={styles.tileWrapper}>
                 <VideoTile
                     stream={localStream}
                     userId={currentUserId}
@@ -59,7 +61,7 @@ export const VideoGrid = ({ localStream, peers, currentUserId, isLocalVideoEnabl
 
             {/* Remote videos */}
             {sortedPeers.map(([socketId, peer]) => (
-                <div key={socketId} className="tile-wrapper">
+                <div key={socketId} className={styles.tileWrapper}>
                     <VideoTile
                         stream={peer.stream}
                         userId={peer.userId}
@@ -68,48 +70,6 @@ export const VideoGrid = ({ localStream, peers, currentUserId, isLocalVideoEnabl
                     />
                 </div>
             ))}
-
-            <style jsx>{`
-                .video-grid {
-                    display: grid;
-                    gap: 16px;
-                    width: 100%;
-                    height: 100%; /* Fill the container */
-                    padding: 24px;
-                    
-                    /* Dynamic Grid */
-                    grid-template-columns: repeat(var(--grid-cols), 1fr);
-                    grid-template-rows: repeat(var(--grid-rows), minmax(0, 1fr));
-                    
-                    /* Center content */
-                    align-content: center;
-                    justify-content: center;
-                    max-width: 1600px;
-                    margin: 0 auto;
-                }
-
-                .tile-wrapper {
-                    width: 100%;
-                    height: 100%;
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                    position: relative;
-                }
-
-                @media (max-width: 768px) {
-                    .video-grid {
-                        gap: 8px;
-                        padding: 12px;
-                        
-                        /* Mobile specific layouts */
-                        grid-template-columns: ${totalCount <= 2 ? '1fr' : 'repeat(2, 1fr)'};
-                        grid-template-rows: repeat(auto-fill, minmax(150px, 1fr));
-                        align-content: start;
-                        overflow-y: auto;
-                    }
-                }
-            `}</style>
         </div>
     );
 };

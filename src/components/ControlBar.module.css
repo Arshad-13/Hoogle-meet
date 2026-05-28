@@ -1,0 +1,105 @@
+.controlBar {
+    width: 100%;
+    height: 80px; /* Match the wrapper height in room.module.css */
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 32px;
+}
+
+.controlLeft,
+.controlRight {
+    flex: 1;
+    display: flex;
+    align-items: center;
+}
+
+.controlCenter {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.participantCount {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: var(--bg-secondary);
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    font-weight: 500;
+    font-size: 13px;
+}
+
+.controlBtn {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+}
+
+.controlBtn:hover {
+    background: rgba(59, 130, 246, 0.2);
+    border-color: var(--accent-blue);
+    transform: scale(1.05);
+}
+
+.controlBtn.active {
+    background: var(--accent-blue);
+    border-color: var(--accent-blue);
+    color: white;
+}
+
+.controlBtn.inactive {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: #ef4444;
+    color: #ef4444;
+}
+
+.controlBtn.danger {
+    background: #dc2626;
+    border-color: #dc2626;
+    color: white;
+}
+
+.controlBtn.danger:hover {
+    background: #b91c1c;
+    border-color: #b91c1c;
+    transform: scale(1.05);
+}
+
+@media (max-width: 768px) {
+    .controlBar {
+        padding: 0 12px;
+        height: 64px; /* Match wrapper mobile height in room.module.css */
+    }
+
+    .controlCenter {
+        gap: 8px;
+    }
+
+    .controlBtn {
+        width: 42px;
+        height: 42px;
+    }
+
+    .controlLeft,
+    .controlRight {
+        flex: 0;
+    }
+
+    .participantCount {
+        font-size: 12px;
+        padding: 4px 8px;
+    }
+}

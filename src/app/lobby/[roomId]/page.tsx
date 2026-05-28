@@ -2,6 +2,7 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState, useRef } from 'react';
+import styles from './lobby.module.css';
 
 export default function Lobby() {
     const params = useParams();
@@ -15,6 +16,7 @@ export default function Lobby() {
     const [isLoading, setIsLoading] = useState(true);
 
     const videoRef = useRef<HTMLVideoElement>(null);
+    const streamRef = useRef<MediaStream | null>(null);
 
     // Attach stream to video element when loading finishes
     useEffect(() => {
@@ -36,6 +38,7 @@ export default function Lobby() {
                 });
 
                 setLocalStream(stream);
+                streamRef.current = stream;
                 setIsLoading(false);
             } catch (error: any) {
                 console.error('Error accessing media devices:', error);
@@ -51,8 +54,9 @@ export default function Lobby() {
         initMedia();
 
         return () => {
-            if (localStream) {
-                localStream.getTracks().forEach(track => track.stop());
+            if (streamRef.current) {
+                console.log('🛑 Cleaning up lobby media tracks');
+                streamRef.current.getTracks().forEach(track => track.stop());
             }
         };
     }, []);
@@ -77,34 +81,40 @@ export default function Lobby() {
         }
     };
 
-    const joinMeeting = () => {
-        if (localStream) {
-            router.push(`/room/${roomId}?mic=${isMicOn}&cam=${isCameraOn}`);
-        }
+    const joinMeeting = (forceMuteAll = false) => {
+        router.push(`/room/${roomId}?mic=${forceMuteAll ? 'false' : String(isMicOn)}&cam=${forceMuteAll ? 'false' : String(isCameraOn)}`);
     };
 
     return (
-        <div className="lobby-container">
-            <div className="lobby-content fade-in">
-                <h1 className="lobby-title">Ready to join?</h1>
-                <p className="lobby-subtitle">Room: {roomId}</p>
+        <div className={styles.lobbyContainer}>
+            <div className={`${styles.lobbyContent} fade-in`}>
+                <h1 className={styles.lobbyTitle}>Ready to join?</h1>
+                <p className={styles.lobbySubtitle}>Room: {roomId}</p>
 
-                <div className="video-preview-container">
+                <div className={styles.videoPreviewContainer}>
                     {isLoading ? (
-                        <div className="loading-state">
-                            <div className="spinner"></div>
+                        <div className={styles.loadingState}>
+                            <div className={styles.spinner}></div>
                             <p>Accessing camera and microphone...</p>
                         </div>
                     ) : permissionError ? (
-                        <div className="error-state">
-                            <div className="error-icon">⚠️</div>
+                        <div className={styles.errorState}>
+                            <div className={styles.errorIcon}>⚠️</div>
                             <p>{permissionError}</p>
-                            <button
-                                className="btn btn-secondary"
-                                onClick={() => window.location.reload()}
-                            >
-                                Try Again
-                            </button>
+                            <div style={{ display: 'flex', gap: '12px', width: '100%', justifyContent: 'center', marginTop: '16px' }}>
+                                <button
+                                    className="btn btn-secondary"
+                                    onClick={() => window.location.reload()}
+                                >
+                                    Try Again
+                                </button>
+                                <button
+                                    className="btn btn-primary"
+                                    onClick={() => joinMeeting(true)}
+                                >
+                                    Join without Media
+                                </button>
+                            </div>
                         </div>
                     ) : (
                         <>
@@ -113,11 +123,11 @@ export default function Lobby() {
                                 autoPlay
                                 muted
                                 playsInline
-                                className="video-preview"
+                                className={styles.videoPreview}
                             />
                             {!isCameraOn && (
-                                <div className="video-off-overlay">
-                                    <div className="video-off-icon">📷</div>
+                                <div className={styles.videoOffOverlay}>
+                                    <div className={styles.videoOffIcon}>📷</div>
                                     <p>Camera is off</p>
                                 </div>
                             )}
@@ -127,7 +137,7 @@ export default function Lobby() {
 
                 {!permissionError && !isLoading && (
                     <>
-                        <div className="lobby-controls">
+                        <div className={styles.lobbyControls}>
                             <button
                                 className={`control-btn ${isMicOn ? 'active' : ''}`}
                                 onClick={toggleMic}
@@ -170,122 +180,12 @@ export default function Lobby() {
                             </button>
                         </div>
 
-                        <button className="btn btn-primary join-btn" onClick={joinMeeting}>
+                        <button className={`btn btn-primary ${styles.joinBtn}`} onClick={() => joinMeeting(false)}>
                             Join Meeting
                         </button>
                     </>
                 )}
             </div>
-
-            <style jsx>{`
-                .lobby-container {
-                    min-height: 100vh;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    padding: 20px;
-                }
-
-                .lobby-content {
-                    max-width: 600px;
-                    width: 100%;
-                    text-align: center;
-                }
-
-                .lobby-title {
-                    font-size: 48px;
-                    font-weight: 700;
-                    margin-bottom: 8px;
-                    background: linear-gradient(135deg, #fff 0%, #a1a8c3 100%);
-                    -webkit-background-clip: text;
-                    -webkit-text-fill-color: transparent;
-                    background-clip: text;
-                }
-
-                .lobby-subtitle {
-                    font-size: 18px;
-                    color: var(--text-secondary);
-                    margin-bottom: 32px;
-                    font-family: 'Courier New', monospace;
-                }
-
-                .video-preview-container {
-                    position: relative;
-                    width: 100%;
-                    aspect-ratio: 16 / 9;
-                    background: var(--bg-secondary);
-                    border-radius: 16px;
-                    overflow: hidden;
-                    margin-bottom: 24px;
-                    border: 1px solid var(--border-color);
-                }
-
-                .video-preview {
-                    width: 100%;
-                    height: 100%;
-                    object-fit: cover;
-                    transform: scaleX(-1);
-                }
-
-                .video-off-overlay {
-                    position: absolute;
-                    top: 0;
-                    left: 0;
-                    right: 0;
-                    bottom: 0;
-                    background: var(--bg-secondary);
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 12px;
-                }
-
-                .video-off-icon {
-                    font-size: 64px;
-                    opacity: 0.5;
-                }
-
-                .loading-state, .error-state {
-                    height: 100%;
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 16px;
-                    color: var(--text-secondary);
-                }
-
-                .spinner {
-                    width: 48px;
-                    height: 48px;
-                    border: 3px solid var(--border-color);
-                    border-top-color: var(--accent-blue);
-                    border-radius: 50%;
-                    animation: spin 1s linear infinite;
-                }
-
-                @keyframes spin {
-                    to { transform: rotate(360deg); }
-                }
-
-                .error-icon {
-                    font-size: 64px;
-                }
-
-                .lobby-controls {
-                    display: flex;
-                    gap: 16px;
-                    justify-content: center;
-                    margin-bottom: 24px;
-                }
-
-                .join-btn {
-                    width: 100%;
-                    padding: 16px;
-                    font-size: 18px;
-                }
-            `}</style>
         </div>
     );
 }
