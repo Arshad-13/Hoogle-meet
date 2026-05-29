@@ -22,6 +22,7 @@ const io = socketIO(server, {
 const rooms = new Map(); // Map<roomId, Set<socketId>>
 const socketToRoom = new Map(); // Map<socketId, roomId>
 const socketToUserId = new Map(); // Map<socketId, userId>
+const socketToUserName = new Map(); // Map<socketId, userName>
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -36,8 +37,8 @@ io.on('connection', (socket) => {
     console.log(`[${new Date().toISOString()}] New connection: ${socket.id}`);
 
     // Handle room join
-    socket.on('join-room', (roomId, userId) => {
-        console.log(`[${new Date().toISOString()}] User ${userId} (${socket.id}) joining room ${roomId}`);
+    socket.on('join-room', (roomId, userId, userName) => {
+        console.log(`[${new Date().toISOString()}] User ${userName || userId} (${socket.id}) joining room ${roomId}`);
 
         // Leave any previous room
         const previousRoom = socketToRoom.get(socket.id);
@@ -71,6 +72,7 @@ io.on('connection', (socket) => {
         socket.join(roomId);
         socketToRoom.set(socket.id, roomId);
         socketToUserId.set(socket.id, userId);
+        socketToUserName.set(socket.id, userName || 'Guest');
 
         // Add to room set
         if (!rooms.has(roomId)) {
@@ -83,7 +85,8 @@ io.on('connection', (socket) => {
             .filter(id => id !== socket.id)
             .map(id => ({
                 socketId: id,
-                userId: socketToUserId.get(id)
+                userId: socketToUserId.get(id),
+                userName: socketToUserName.get(id)
             }));
 
         // Send existing users to the new user
@@ -92,7 +95,8 @@ io.on('connection', (socket) => {
         // Notify other users that a new user joined
         socket.to(roomId).emit('user-joined', {
             socketId: socket.id,
-            userId: userId
+            userId: userId,
+            userName: userName || 'Guest'
         });
 
         console.log(`[${new Date().toISOString()}] Room ${roomId} now has ${rooms.get(roomId).size} users`);
@@ -104,7 +108,8 @@ io.on('connection', (socket) => {
         io.to(data.target).emit('offer', {
             sdp: data.sdp,
             sender: socket.id,
-            senderId: socketToUserId.get(socket.id)
+            senderId: socketToUserId.get(socket.id),
+            senderName: socketToUserName.get(socket.id)
         });
     });
 
@@ -114,7 +119,8 @@ io.on('connection', (socket) => {
         io.to(data.target).emit('answer', {
             sdp: data.sdp,
             sender: socket.id,
-            senderId: socketToUserId.get(socket.id)
+            senderId: socketToUserId.get(socket.id),
+            senderName: socketToUserName.get(socket.id)
         });
     });
 
@@ -124,8 +130,24 @@ io.on('connection', (socket) => {
         io.to(data.target).emit('ice-candidate', {
             candidate: data.candidate,
             sender: socket.id,
-            senderId: socketToUserId.get(socket.id)
+            senderId: socketToUserId.get(socket.id),
+            senderName: socketToUserName.get(socket.id)
         });
+    });
+
+    // Handle screen share state
+    socket.on('screen-share-started', () => {
+        const roomId = socketToRoom.get(socket.id);
+        if (roomId) {
+            socket.to(roomId).emit('screen-share-started', { socketId: socket.id });
+        }
+    });
+
+    socket.on('screen-share-stopped', () => {
+        const roomId = socketToRoom.get(socket.id);
+        if (roomId) {
+            socket.to(roomId).emit('screen-share-stopped', { socketId: socket.id });
+        }
     });
 
     // Handle disconnection
@@ -158,6 +180,7 @@ io.on('connection', (socket) => {
         // Cleanup
         socketToRoom.delete(socket.id);
         socketToUserId.delete(socket.id);
+        socketToUserName.delete(socket.id);
     });
 
     // Handle manual leave

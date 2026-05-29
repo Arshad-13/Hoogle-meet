@@ -8,6 +8,7 @@ interface Peer {
     connection: RTCPeerConnection;
     stream: MediaStream | null;
     userId: string;
+    userName?: string;
 }
 
 interface VideoGridProps {
@@ -64,7 +65,7 @@ export const VideoGrid = ({ localStream, peers, currentUserId, isLocalVideoEnabl
                 <div key={socketId} className={styles.tileWrapper}>
                     <VideoTile
                         stream={peer.stream}
-                        userId={peer.userId}
+                        userId={peer.userName || peer.userId}
                         isMuted={false}
                         isLocal={false}
                     />

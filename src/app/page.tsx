@@ -7,10 +7,31 @@ import styles from './page.module.css';
 export default function Home() {
     const router = useRouter();
     const [roomId, setRoomId] = useState('');
+    const [isCreating, setIsCreating] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-    const createMeeting = () => {
-        const newRoomId = Math.random().toString(36).substring(2, 10);
-        router.push(`/lobby/${newRoomId}`);
+    const createMeeting = async () => {
+        setIsCreating(true);
+        setError(null);
+        try {
+            const serverUrl = process.env.NEXT_PUBLIC_SIGNALING_URL || 'http://localhost:3001';
+            const res = await fetch(`${serverUrl}/health`);
+            const data = await res.json();
+            
+            if (data.rooms > 0) {
+                setError('A meeting is currently in progress. Only 1 active meeting is supported on the free tier.');
+                setIsCreating(false);
+                return;
+            }
+
+            const newRoomId = Math.random().toString(36).substring(2, 10);
+            router.push(`/lobby/${newRoomId}`);
+        } catch (err) {
+            console.error('Failed to check server health:', err);
+            // If health check fails, allow creation anyway, backend will still enforce it
+            const newRoomId = Math.random().toString(36).substring(2, 10);
+            router.push(`/lobby/${newRoomId}`);
+        }
     };
 
     const joinMeeting = () => {
@@ -32,18 +53,30 @@ export default function Home() {
                 </div>
 
                 <div className="actions glass">
-                    <button className="btn btn-primary" onClick={createMeeting} style={{ width: '100%' }}>
-                        <svg
-                            width="20"
-                            height="20"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                        >
-                            <path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                        </svg>
-                        Create New Meeting
+                    {error && (
+                        <div style={{ color: '#ef4444', fontSize: '14px', marginBottom: '16px', textAlign: 'center', backgroundColor: 'rgba(239, 68, 68, 0.1)', padding: '10px', borderRadius: '8px' }}>
+                            {error}
+                        </div>
+                    )}
+
+                    <button className="btn btn-primary" onClick={createMeeting} style={{ width: '100%' }} disabled={isCreating}>
+                        {isCreating ? (
+                            <span>Checking availability...</span>
+                        ) : (
+                            <>
+                                <svg
+                                    width="20"
+                                    height="20"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                >
+                                    <path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                </svg>
+                                Create New Meeting
+                            </>
+                        )}
                     </button>
 
                     <div className={styles.divider}>

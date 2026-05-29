@@ -14,6 +14,8 @@ export default function Lobby() {
     const [isCameraOn, setIsCameraOn] = useState(true);
     const [permissionError, setPermissionError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [userName, setUserName] = useState('');
+    const [copied, setCopied] = useState(false);
 
     const videoRef = useRef<HTMLVideoElement>(null);
     const streamRef = useRef<MediaStream | null>(null);
@@ -82,7 +84,15 @@ export default function Lobby() {
     };
 
     const joinMeeting = (forceMuteAll = false) => {
-        router.push(`/room/${roomId}?mic=${forceMuteAll ? 'false' : String(isMicOn)}&cam=${forceMuteAll ? 'false' : String(isCameraOn)}`);
+        const nameParam = userName.trim() ? `&name=${encodeURIComponent(userName.trim())}` : '';
+        router.push(`/room/${roomId}?mic=${forceMuteAll ? 'false' : String(isMicOn)}&cam=${forceMuteAll ? 'false' : String(isCameraOn)}${nameParam}`);
+    };
+
+    const copyInviteLink = () => {
+        const link = `${window.location.origin}/lobby/${roomId}`;
+        navigator.clipboard.writeText(link);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
     };
 
     return (
@@ -180,9 +190,36 @@ export default function Lobby() {
                             </button>
                         </div>
 
-                        <button className={`btn btn-primary ${styles.joinBtn}`} onClick={() => joinMeeting(false)}>
-                            Join Meeting
-                        </button>
+                        <div className={styles.inputGroup}>
+                            <label htmlFor="userName">Your Name</label>
+                            <input
+                                id="userName"
+                                type="text"
+                                className={styles.nameInput}
+                                placeholder="Enter your display name"
+                                value={userName}
+                                onChange={(e) => setUserName(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && joinMeeting(false)}
+                                maxLength={20}
+                            />
+                        </div>
+
+                        <div className={styles.actionRow}>
+                            <button 
+                                className={styles.copyBtn} 
+                                onClick={copyInviteLink}
+                                title="Copy Invite Link"
+                            >
+                                {copied ? '✅ Copied' : '🔗 Copy Link'}
+                            </button>
+                            <button 
+                                className={`btn btn-primary ${styles.joinBtn}`} 
+                                onClick={() => joinMeeting(false)}
+                                disabled={!userName.trim()}
+                            >
+                                Join Meeting
+                            </button>
+                        </div>
                     </>
                 )}
             </div>

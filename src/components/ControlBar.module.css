@@ -66,6 +66,19 @@
     color: #ef4444;
 }
 
+.controlBtn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+}
+
+.controlBtn.disabled:hover {
+    transform: none;
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+}
+
 .controlBtn.danger {
     background: #dc2626;
     border-color: #dc2626;

@@ -8,12 +8,14 @@ interface Peer {
     connection: RTCPeerConnection;
     stream: MediaStream | null;
     userId: string;
+    userName: string;
 }
 
 export const useWebRTC = (
     socket: Socket | null,
     roomId: string,
     userId: string,
+    userName: string,
     initialState: { mic: boolean; cam: boolean } = { mic: true, cam: true }
 ) => {
     const [localStream, setLocalStream] = useState<MediaStream | null>(null);
@@ -21,6 +23,7 @@ export const useWebRTC = (
     const [isMicOn, setIsMicOn] = useState(initialState.mic);
     const [isCameraOn, setIsCameraOn] = useState(initialState.cam);
     const [isScreenSharing, setIsScreenSharing] = useState(false);
+    const [remoteScreenSharing, setRemoteScreenSharing] = useState(false);
 
     const peersRef = useRef<Map<string, Peer>>(new Map());
     const localStreamRef = useRef<MediaStream | null>(null);
@@ -78,8 +81,8 @@ export const useWebRTC = (
     }, [initialState.mic, initialState.cam]);
 
     // ─── Create peer connection ────────────────────────────────────────────
-    const createPeerConnection = useCallback((targetSocketId: string, targetUserId: string): RTCPeerConnection => {
-        console.log(`Creating peer connection for ${targetUserId} (${targetSocketId})`);
+    const createPeerConnection = useCallback((targetSocketId: string, targetUserId: string, targetUserName: string): RTCPeerConnection => {
+        console.log(`Creating peer connection for ${targetUserName || targetUserId} (${targetSocketId})`);
         const peerConnection = new RTCPeerConnection(rtcConfiguration);
 
         // Add local tracks to the connection
@@ -102,17 +105,17 @@ export const useWebRTC = (
         // Log & handle connection state changes
         peerConnection.onconnectionstatechange = () => {
             const state = peerConnection.connectionState;
-            console.log(`Connection state with ${targetUserId}: ${state}`);
+            console.log(`Connection state with ${targetUserName || targetUserId}: ${state}`);
 
             if (state === 'failed') {
-                console.warn(`❌ P2P connection failed with ${targetUserId} — attempting ICE restart`);
+                console.warn(`❌ P2P connection failed with ${targetUserName || targetUserId} — attempting ICE restart`);
                 peerConnection.restartIce();
             }
         };
 
         // Handle incoming remote tracks
         peerConnection.ontrack = (event) => {
-            console.log(`Received remote track from ${targetUserId}`);
+            console.log(`Received remote track from ${targetUserName || targetUserId}`);
             const [remoteStream] = event.streams;
 
             setPeers(prev => {
@@ -134,9 +137,9 @@ export const useWebRTC = (
     }, []);
 
     // ─── Create offer to a peer ───────────────────────────────────────────
-    const createOffer = useCallback(async (targetSocketId: string, targetUserId: string) => {
-        const peerConnection = createPeerConnection(targetSocketId, targetUserId);
-        const peer: Peer = { connection: peerConnection, stream: null, userId: targetUserId };
+    const createOffer = useCallback(async (targetSocketId: string, targetUserId: string, targetUserName: string) => {
+        const peerConnection = createPeerConnection(targetSocketId, targetUserId, targetUserName);
+        const peer: Peer = { connection: peerConnection, stream: null, userId: targetUserId, userName: targetUserName };
 
         setPeers(prev => new Map(prev).set(targetSocketId, peer));
         peersRef.current.set(targetSocketId, peer);
@@ -145,7 +148,7 @@ export const useWebRTC = (
             const offer = await peerConnection.createOffer();
             await peerConnection.setLocalDescription(offer);
             socketRef.current?.emit('offer', { target: targetSocketId, sdp: offer });
-            console.log(`Sent offer to ${targetUserId}`);
+            console.log(`Sent offer to ${targetUserName || targetUserId}`);
         } catch (error) {
             console.error('Error creating offer:', error);
         }
@@ -155,11 +158,12 @@ export const useWebRTC = (
     const handleOffer = useCallback(async (
         senderSocketId: string,
         senderId: string,
+        senderName: string,
         sdp: RTCSessionDescriptionInit
     ) => {
-        console.log(`Received offer from ${senderId}`);
-        const peerConnection = createPeerConnection(senderSocketId, senderId);
-        const peer: Peer = { connection: peerConnection, stream: null, userId: senderId };
+        console.log(`Received offer from ${senderName || senderId}`);
+        const peerConnection = createPeerConnection(senderSocketId, senderId, senderName);
+        const peer: Peer = { connection: peerConnection, stream: null, userId: senderId, userName: senderName };
 
         setPeers(prev => new Map(prev).set(senderSocketId, peer));
         peersRef.current.set(senderSocketId, peer);
@@ -169,12 +173,12 @@ export const useWebRTC = (
             const answer = await peerConnection.createAnswer();
             await peerConnection.setLocalDescription(answer);
             socketRef.current?.emit('answer', { target: senderSocketId, sdp: answer });
-            console.log(`Sent answer to ${senderId}`);
+            console.log(`Sent answer to ${senderName || senderId}`);
 
             // Flush any queued ICE candidates
             const queued = pendingCandidates.current.get(senderSocketId);
             if (queued?.length) {
-                console.log(`Processing ${queued.length} pending ICE candidates for ${senderId}`);
+                console.log(`Processing ${queued.length} pending ICE candidates for ${senderName || senderId}`);
                 for (const c of queued) {
                     await peerConnection.addIceCandidate(new RTCIceCandidate(c)).catch(e =>
                         console.error('Error adding pending candidate:', e)
@@ -197,12 +201,12 @@ export const useWebRTC = (
 
         try {
             await peer.connection.setRemoteDescription(new RTCSessionDescription(sdp));
-            console.log(`Answer set for ${peer.userId}`);
+            console.log(`Answer set for ${peer.userName || peer.userId}`);
 
             // Flush queued candidates
             const queued = pendingCandidates.current.get(senderSocketId);
             if (queued?.length) {
-                console.log(`Processing ${queued.length} pending ICE candidates for ${peer.userId}`);
+                console.log(`Processing ${queued.length} pending ICE candidates for ${peer.userName || peer.userId}`);
                 for (const c of queued) {
                     await peer.connection.addIceCandidate(new RTCIceCandidate(c)).catch(e =>
                         console.error('Error adding pending candidate:', e)
@@ -250,7 +254,7 @@ export const useWebRTC = (
                 next.delete(socketId);
                 return next;
             });
-            console.log(`Removed peer ${peer.userId}`);
+            console.log(`Removed peer ${peer.userName || peer.userId}`);
         }
     }, []);
 
@@ -274,6 +278,11 @@ export const useWebRTC = (
 
     // ─── Start screen sharing ─────────────────────────────────────────────
     const startScreenShare = useCallback(async () => {
+        if (remoteScreenSharing) {
+            alert("Someone else is already sharing their screen.");
+            return;
+        }
+
         try {
             const screenStream = await navigator.mediaDevices.getDisplayMedia({
                 video: true,
@@ -301,6 +310,9 @@ export const useWebRTC = (
                 setLocalStream(new MediaStream(localStreamRef.current.getTracks()));
             }
 
+            // Tell the server we started screen sharing
+            socketRef.current?.emit('screen-share-started');
+
             // Auto-stop when the user clicks browser "Stop sharing"
             screenTrack.onended = () => stopScreenShare();
 
@@ -310,7 +322,7 @@ export const useWebRTC = (
         } catch (error) {
             console.error('Error starting screen share:', error);
         }
-    }, []);
+    }, [remoteScreenSharing]);
 
     // ─── Stop screen sharing ──────────────────────────────────────────────
     const stopScreenShare = useCallback(() => {
@@ -337,6 +349,9 @@ export const useWebRTC = (
             originalVideoTrackRef.current = null;
         }
 
+        // Tell the server we stopped screen sharing
+        socketRef.current?.emit('screen-share-stopped');
+
         setIsScreenSharing(false);
         setIsCameraOn(true);
         console.log('✅ Screen sharing stopped');
@@ -345,41 +360,49 @@ export const useWebRTC = (
     // ─── Join room ────────────────────────────────────────────────────────
     const joinRoom = useCallback(() => {
         if (socketRef.current) {
-            console.log(`Joining room ${roomId} as ${userId}`);
-            socketRef.current.emit('join-room', roomId, userId);
+            console.log(`Joining room ${roomId} as ${userName || userId}`);
+            socketRef.current.emit('join-room', roomId, userId, userName);
         }
-    }, [roomId, userId]);
+    }, [roomId, userId, userName]);
 
     // ─── Socket event listeners ───────────────────────────────────────────
     useEffect(() => {
         if (!socket) return;
 
-        socket.on('existing-users', (users: Array<{ socketId: string; userId: string }>) => {
+        socket.on('existing-users', (users: Array<{ socketId: string; userId: string; userName: string }>) => {
             console.log(`Existing users in room:`, users);
             // We are the newcomer — create an offer to each already-present user
-            users.forEach(user => createOffer(user.socketId, user.userId));
+            users.forEach(user => createOffer(user.socketId, user.userId, user.userName));
         });
 
-        socket.on('user-joined', (data: { socketId: string; userId: string }) => {
-            console.log(`User joined: ${data.userId} — waiting for their offer`);
+        socket.on('user-joined', (data: { socketId: string; userId: string; userName: string }) => {
+            console.log(`User joined: ${data.userName || data.userId} — waiting for their offer`);
             // The new user will send us an offer; nothing to do here except log
         });
 
-        socket.on('offer', (data: { sender: string; senderId: string; sdp: RTCSessionDescriptionInit }) => {
-            handleOffer(data.sender, data.senderId, data.sdp);
+        socket.on('offer', (data: { sender: string; senderId: string; senderName: string; sdp: RTCSessionDescriptionInit }) => {
+            handleOffer(data.sender, data.senderId, data.senderName, data.sdp);
         });
 
-        socket.on('answer', (data: { sender: string; sdp: RTCSessionDescriptionInit }) => {
+        socket.on('answer', (data: { sender: string; senderId: string; senderName: string; sdp: RTCSessionDescriptionInit }) => {
             handleAnswer(data.sender, data.sdp);
         });
 
-        socket.on('ice-candidate', (data: { sender: string; candidate: RTCIceCandidateInit }) => {
+        socket.on('ice-candidate', (data: { sender: string; senderId: string; senderName: string; candidate: RTCIceCandidateInit }) => {
             handleIceCandidate(data.sender, data.candidate);
         });
 
         socket.on('user-disconnected', (data: { socketId: string; userId: string }) => {
             console.log(`User disconnected: ${data.userId}`);
             removePeer(data.socketId);
+        });
+
+        socket.on('screen-share-started', () => {
+            setRemoteScreenSharing(true);
+        });
+
+        socket.on('screen-share-stopped', () => {
+            setRemoteScreenSharing(false);
         });
 
         return () => {
@@ -389,6 +412,8 @@ export const useWebRTC = (
             socket.off('answer');
             socket.off('ice-candidate');
             socket.off('user-disconnected');
+            socket.off('screen-share-started');
+            socket.off('screen-share-stopped');
         };
     }, [socket, createOffer, handleOffer, handleAnswer, handleIceCandidate, removePeer]);
 
@@ -417,6 +442,7 @@ export const useWebRTC = (
         isMicOn,
         isCameraOn,
         isScreenSharing,
+        remoteScreenSharing,
         initLocalStream,
         joinRoom,
         toggleMic,

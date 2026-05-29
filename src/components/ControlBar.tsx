@@ -7,6 +7,7 @@ interface ControlBarProps {
     isMicOn: boolean;
     isCameraOn: boolean;
     isScreenSharing: boolean;
+    isRemoteScreenSharing?: boolean;
     onToggleMic: () => void;
     onToggleCamera: () => void;
     onToggleScreenShare: () => void;
@@ -17,6 +18,7 @@ export const ControlBar = ({
     isMicOn,
     isCameraOn,
     isScreenSharing,
+    isRemoteScreenSharing = false,
     onToggleMic,
     onToggleCamera,
     onToggleScreenShare,
@@ -88,9 +90,10 @@ export const ControlBar = ({
 
                 {/* Screen Share */}
                 <button
-                    className={`${styles.controlBtn} ${isScreenSharing ? styles.active : ''}`}
+                    className={`${styles.controlBtn} ${isScreenSharing ? styles.active : ''} ${isRemoteScreenSharing ? styles.disabled : ''}`}
                     onClick={onToggleScreenShare}
-                    title={isScreenSharing ? 'Stop sharing' : 'Share screen'}
+                    disabled={isRemoteScreenSharing}
+                    title={isScreenSharing ? 'Stop sharing' : isRemoteScreenSharing ? 'Someone else is sharing' : 'Share screen'}
                 >
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />

@@ -13,9 +13,9 @@ export default function Room() {
     const searchParams = useSearchParams();
     const roomId = params.roomId as string;
 
-    // Parse initial state from URL
     const initialMic = searchParams.get('mic') !== 'false';
     const initialCam = searchParams.get('cam') !== 'false';
+    const userName = searchParams.get('name') || 'Guest';
 
     const [userId] = useState(() => `User-${Math.random().toString(36).substring(2, 8)}`);
     const [isInitialized, setIsInitialized] = useState(false);
@@ -33,7 +33,7 @@ export default function Room() {
         toggleCamera,
         startScreenShare,
         stopScreenShare,
-    } = useWebRTC(socket, roomId, userId, { mic: initialMic, cam: initialCam });
+    } = useWebRTC(socket, roomId, userId, userName, { mic: initialMic, cam: initialCam });
 
     // 1. Initialize media stream once on mount/setup
     useEffect(() => {
@@ -107,12 +107,11 @@ export default function Room() {
                 </div>
             </header>
 
-            {/* Main Video Area */}
             <main className={styles.videoArea}>
                 <VideoGrid
                     localStream={localStream}
                     peers={peers}
-                    currentUserId={userId}
+                    currentUserId={userName}
                     isLocalVideoEnabled={isCameraOn}
                     isLocalAudioEnabled={isMicOn}
                 />
